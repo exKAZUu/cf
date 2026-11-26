@@ -8,6 +8,7 @@
  */
 import { readCached, writeCached } from "./disk-cache.js";
 import type { JsonSchema } from "./schema-flags.js";
+import { ApiTimeoutError } from "#api";
 
 /** Total network budget for schema-backed help, including account discovery. */
 export const SCHEMA_HELP_TIMEOUT_MS = 5000;
@@ -196,6 +197,9 @@ export function describeSchemaFailure(err: unknown): string {
 	if (err === null || typeof err !== "object") {
 		return "the request failed";
 	}
+	if (err instanceof ApiTimeoutError) {
+		return "the request timed out";
+	}
 	const status = (err as { statusCode?: number }).statusCode;
 	if (status === 404) {
 		return "not found, or this account can't access it";
@@ -210,6 +214,5 @@ export function describeSchemaFailure(err: unknown): string {
 	if (!message) {
 		return "the request failed";
 	}
-	const firstLine = (message.split("\n")[0] ?? "").replace(/\.$/, "");
-	return /^"?timeout"?$/i.test(firstLine) ? "the request timed out" : firstLine;
+	return (message.split("\n")[0] ?? "").replace(/\.$/, "");
 }
