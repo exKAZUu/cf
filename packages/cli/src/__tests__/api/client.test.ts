@@ -442,6 +442,28 @@ describe("send", () => {
 		);
 	});
 
+	test("reports each address of a host that refused every connection", async () => {
+		const { client: c } = client(() => {
+			throw new TypeError("fetch failed", {
+				cause: new AggregateError([
+					new Error("connect ECONNREFUSED ::1:59999"),
+					new Error("connect ECONNREFUSED 127.0.0.1:59999"),
+				]),
+			});
+		});
+		await assert.rejects(
+			c.send({ method: "GET", path: idPath }, { id: "1" }),
+			(error: unknown) => {
+				assert.ok(error instanceof ApiError);
+				assert.equal(
+					error.message,
+					"fetch failed: connect ECONNREFUSED ::1:59999, connect ECONNREFUSED 127.0.0.1:59999"
+				);
+				return true;
+			}
+		);
+	});
+
 	test("retries", async () => {
 		let calls = 0;
 		const { client: c } = client(
