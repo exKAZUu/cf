@@ -132,12 +132,14 @@ describe("createCommandClient", () => {
 				apiToken: "test-token",
 				baseURL: "https://api.test/client/v4",
 				fetch: async () => {
-					throw new Error("socket closed");
+					throw new TypeError("fetch failed", {
+						cause: new Error("socket closed"),
+					});
 				},
 			});
 
 			await expect(requestApi(client, "GET", "/zones")).rejects.toThrow(
-				"Request failed: socket closed"
+				"Request failed: fetch failed: socket closed"
 			);
 		});
 
@@ -157,7 +159,7 @@ describe("createCommandClient", () => {
 			).rejects.toThrow("Request timed out after 1234ms");
 		});
 
-		it("turns the SDK's string timeout into an actionable error", async () => {
+		it("turns a timed-out request into an actionable error", async () => {
 			const client = createCloudflareClientWithToken({
 				apiToken: "test-token",
 				baseURL: "https://api.test/client/v4",
