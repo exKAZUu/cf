@@ -9,6 +9,7 @@ export {
 	ApiError,
 	type ApiErrorInit,
 	ApiTimeoutError,
+	messageWithCauses,
 	type RawResponse,
 } from "./error.js";
 export type { BinaryResponse } from "./fetch.js";

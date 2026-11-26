@@ -343,7 +343,7 @@ async function sendOnce(
 	let timer: ReturnType<typeof setTimeout> | undefined;
 	if (timeoutMs !== undefined) {
 		const controller = new AbortController();
-		timer = setTimeout(() => controller.abort("timeout"), timeoutMs);
+		timer = setTimeout(() => controller.abort(), timeoutMs);
 		signals.push(controller.signal);
 	}
 	if (signal !== undefined) {

@@ -403,11 +403,12 @@ describe("send", () => {
 	});
 
 	test("times out", async () => {
+		// `fetch` rejects with the signal's abort reason.
 		const { client: c } = client(
 			(_, init) =>
 				new Promise((_resolve, reject) => {
 					init.signal?.addEventListener("abort", () =>
-						reject(new DOMException("aborted", "AbortError"))
+						reject(init.signal?.reason)
 					);
 				}),
 			{ timeoutInSeconds: 0.01 }
@@ -417,6 +418,47 @@ describe("send", () => {
 			(error: unknown) => {
 				assert.ok(error instanceof ApiTimeoutError);
 				assert.equal(error.message, "Timeout exceeded when calling GET /a/1.");
+				return true;
+			}
+		);
+	});
+
+	test("reports the cause of a network failure", async () => {
+		const { client: c } = client(() => {
+			throw new TypeError("fetch failed", {
+				cause: new Error("getaddrinfo ENOTFOUND api.test"),
+			});
+		});
+		await assert.rejects(
+			c.send({ method: "GET", path: idPath }, { id: "1" }),
+			(error: unknown) => {
+				assert.ok(error instanceof ApiError);
+				assert.equal(
+					error.message,
+					"fetch failed: getaddrinfo ENOTFOUND api.test"
+				);
+				return true;
+			}
+		);
+	});
+
+	test("reports each address of a host that refused every connection", async () => {
+		const { client: c } = client(() => {
+			throw new TypeError("fetch failed", {
+				cause: new AggregateError([
+					new Error("connect ECONNREFUSED ::1:59999"),
+					new Error("connect ECONNREFUSED 127.0.0.1:59999"),
+				]),
+			});
+		});
+		await assert.rejects(
+			c.send({ method: "GET", path: idPath }, { id: "1" }),
+			(error: unknown) => {
+				assert.ok(error instanceof ApiError);
+				assert.equal(
+					error.message,
+					"fetch failed: connect ECONNREFUSED ::1:59999, connect ECONNREFUSED 127.0.0.1:59999"
+				);
 				return true;
 			}
 		);

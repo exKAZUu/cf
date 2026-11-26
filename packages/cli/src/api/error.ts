@@ -137,3 +137,36 @@ export function statusError(
 	error.name = name;
 	return error;
 }
+
+/**
+ * The message of `error` followed by those of its causes, as in
+ * `fetch failed: getaddrinfo ENOTFOUND api.example.invalid`. `fetch` reports
+ * every network failure as `fetch failed` and gives the reason only in
+ * `cause`.
+ */
+export function messageWithCauses(error: unknown): string {
+	const messages: string[] = [];
+	const seen = new Set<unknown>();
+	let current: unknown = error;
+	while (current !== undefined && current !== null && !seen.has(current)) {
+		seen.add(current);
+		const message = describe(current);
+		if (message) {
+			messages.push(message);
+		}
+		current = current instanceof Error ? current.cause : undefined;
+	}
+	return messages.join(": ");
+}
+
+/**
+ * The message of one error. `fetch` reports a failure to connect to a host
+ * with several addresses (IPv4 and IPv6) as an `AggregateError` with an
+ * empty message, holding one error per address.
+ */
+function describe(error: unknown): string {
+	if (error instanceof AggregateError && error.errors.length > 0) {
+		return [...new Set(error.errors.map(describe))].filter(Boolean).join(", ");
+	}
+	return error instanceof Error ? error.message : JSON.stringify(error);
+}

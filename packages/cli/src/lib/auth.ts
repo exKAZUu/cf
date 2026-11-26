@@ -6,7 +6,13 @@ import { getAuthToken } from "./auth-token.js";
 import { getComplianceRegion, resolveAccountIdSilent } from "./context.js";
 import { isTemporaryAccountRequested } from "./oauth/index.js";
 import { getDefaultHeaders } from "./request-headers.js";
-import { ApiError, Client, type ClientOptions, withResultInfo } from "#api";
+import {
+	ApiError,
+	Client,
+	type ClientOptions,
+	messageWithCauses,
+	withResultInfo,
+} from "#api";
 import listAccounts from "#operations/accounts/list.js";
 import listMemberships from "#operations/user/memberships/list.js";
 
@@ -187,10 +193,7 @@ export async function requestApi<T>(
 		if (options.signal?.aborted) {
 			throw new Error("Request aborted", { cause: error });
 		}
-		if (
-			error === "timeout" ||
-			(error instanceof Error && error.name === "AbortError")
-		) {
+		if (error instanceof Error && error.name === "AbortError") {
 			throw new Error(
 				uploadClient
 					? "Request timed out"
@@ -200,7 +203,9 @@ export async function requestApi<T>(
 		}
 		if (error instanceof Error) {
 			// Network failures have no HTTP status, so keep them as plain errors.
-			throw new Error(`Request failed: ${error.message}`, { cause: error });
+			throw new Error(`Request failed: ${messageWithCauses(error)}`, {
+				cause: error,
+			});
 		}
 		throw error;
 	}

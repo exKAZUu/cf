@@ -4,16 +4,19 @@ import {
 	pickSchema,
 	SCHEMA_HELP_TIMEOUT_MS,
 } from "../../lib/schema-cache.js";
+import { ApiTimeoutError } from "#api";
 
 describe("schema cache", () => {
 	it("gives schema-backed help a five-second network budget", () => {
 		expect(SCHEMA_HELP_TIMEOUT_MS).toBe(5000);
 	});
 
-	it("normalises the SDK timeout message", () => {
-		expect(describeSchemaFailure(new Error('"timeout"'))).toBe(
-			"the request timed out"
-		);
+	it("normalises the client's timeout error", () => {
+		expect(
+			describeSchemaFailure(
+				new ApiTimeoutError("Timeout exceeded when calling GET /a.")
+			)
+		).toBe("the request timed out");
 	});
 
 	it("gives credential-source-neutral guidance for rejected credentials", () => {

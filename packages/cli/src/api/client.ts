@@ -2,6 +2,7 @@ import {
 	ApiError,
 	ApiTimeoutError,
 	abortedResponse,
+	messageWithCauses,
 	rawResponse,
 	statusError,
 	unknownResponse,
@@ -285,7 +286,7 @@ export class Client {
 				);
 			}
 			throw new ApiError({
-				message: error instanceof Error ? error.message : JSON.stringify(error),
+				message: messageWithCauses(error),
 				rawResponse: unknownResponse,
 				cause: error,
 			});
